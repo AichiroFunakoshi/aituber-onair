@@ -16,6 +16,20 @@
 可能なら Node 20 LTS を使います。Node 25 での失敗は、コードの問題ではなく
 ランタイム差分の可能性があります。
 
+## Node.jsの扱い
+
+このリポジトリのCIはNode 20で動いています。そのため、ローカルでもNode 20 LTSを
+基準にします。ルートに `.nvmrc` を置き、`nvm use` などのNodeバージョン管理ツールで
+Node 20へ切り替えられるようにします。
+
+現在このMacに入っている Node 25.9.0 / npm 11.12.1 でも、2026-06-17時点では
+`npm run fmt`、`npm run lint`、`npm run test`、`npm run build` が成功しています。
+したがって、Node 25でただちに作業不能という状態ではありません。
+
+ただし、CIと同じ条件で再現性を高めるにはNode 20を使います。複数のNodeを同じMacに
+入れても問題ありません。`nvm`、`fnm`、`mise`、Homebrewの `node@20` などで複数versionを
+共存させ、`PATH` またはツール設定でプロジェクトごとに切り替えます。
+
 ## MacBook Airでの負荷対策
 
 このMacは8GBメモリのため、全workspacesの `install`、`build`、`test` を連続で
