@@ -16,6 +16,20 @@
 可能なら Node 20 LTS を使います。Node 25 での失敗は、コードの問題ではなく
 ランタイム差分の可能性があります。
 
+## Node.jsの扱い
+
+このリポジトリのCIはNode 20で動いています。そのため、ローカルでもNode 20 LTSを
+基準にします。ルートに `.nvmrc` を置き、`nvm use` などのNodeバージョン管理ツールで
+Node 20へ切り替えられるようにします。
+
+現在このMacに入っている Node 25.9.0 / npm 11.12.1 でも、2026-06-17時点では
+`npm run fmt`、`npm run lint`、`npm run test`、`npm run build` が成功しています。
+したがって、Node 25でただちに作業不能という状態ではありません。
+
+ただし、CIと同じ条件で再現性を高めるにはNode 20を使います。複数のNodeを同じMacに
+入れても問題ありません。`nvm`、`fnm`、`mise`、Homebrewの `node@20` などで複数versionを
+共存させ、`PATH` またはツール設定でプロジェクトごとに切り替えます。
+
 ## MacBook Airでの負荷対策
 
 このMacは8GBメモリのため、全workspacesの `install`、`build`、`test` を連続で
@@ -68,7 +82,92 @@ OPENAI_TTS_API_KEY=
 
 ## 検証記録
 
-まだ依存インストール、ビルド、テストは実行していません。理由は、先に
-MacBook Air上でCodex/ChatGPTアプリの強制終了・ハング傾向を確認したためです。
-初回の重い検証は、対象サンプルを絞って実行します。
+### 2026-06-17: PNGTuberサンプルの最小検証
 
+実行方針:
+
+- 全workspaces一括ではなく、PNGTuberサンプルに必要な範囲だけ検証。
+- npmの共有キャッシュ `~/.npm` は権限問題があったため使わない。
+- 専用キャッシュ `/private/tmp/tuber-npm-cache` を使う。
+- 重い処理は並列化しない。
+
+最初に以下を実行したところ、`~/.npm` 配下のroot-ownedファイルにより失敗しました。
+
+```sh
+cd packages/core/examples/react-pngtuber-app
+npm ci --no-audit --no-fund
+```
+
+再実行では専用キャッシュを指定し、依存インストールに成功しました。
+
+```sh
+npm ci --cache /private/tmp/tuber-npm-cache --no-audit --no-fund
+```
+
+PNGTuberサンプル単体のbuildは、ローカルworkspaceパッケージの `dist` が未作成だったため
+一度失敗しました。必要パッケージのみ順番にbuildしてから再実行し、成功しました。
+
+```sh
+cd /Users/inaminetetsuo/Tuber/aituber-onair
+npm run build --workspace @aituber-onair/chat
+npm run build --workspace @aituber-onair/voice
+npm run build --workspace @aituber-onair/manneri
+npm run build --workspace @aituber-onair/comment-intelligence
+npm run build --workspace @aituber-onair/core
+
+cd packages/core/examples/react-pngtuber-app
+npm run build
+```
+
+開発サーバーも短時間だけ起動し、HTTP応答を確認しました。
+
+```sh
+npm run dev -- --host 127.0.0.1
+curl -I http://127.0.0.1:5173/
+```
+
+結果:
+
+- `npm ci` 成功。
+- 必要workspaceパッケージのbuild成功。
+- `react-pngtuber-app` のproduction build成功。
+- Vite dev server は `http://127.0.0.1:5173/` で起動。
+- `curl -I` で `HTTP/1.1 200 OK` を確認。
+- ブラウザ実機確認は未実行。
+
+補足:
+
+- `/usr/bin/time -l` は、このサンドボックスでは `sysctl kern.clockrate: Operation not permitted`
+  により終了コード1になることがあるため、npmコマンド自体の成否とは分けて扱う。
+- `node_modules` と `dist` はignore対象で、リポジトリにはコミットしない。
+
+### 2026-06-17: 全workspaces検証
+
+ユーザー指示により、全workspacesの標準検証を実行しました。
+
+```sh
+npm run fmt
+npm run lint
+npm run test
+npm run build
+```
+
+初回の `npm run test` では、Node 25 / npm 11 環境で次のテストが失敗しました。
+
+- `@aituber-onair/noise`: `LocalStorageNoiseMemoryStore` のテストがランタイム提供の
+  `globalThis.localStorage` 形状に依存していた。
+- `@aituber-onair/voice`: `OpenAiEngine` のテストが `Response.blob().arrayBuffer()` の
+  実装差分に依存していた。
+
+対応:
+
+- `packages/noise/tests/memoryStores.test.ts` で、明示的なStorage fakeを渡すようにした。
+- `packages/voice/tests/OpenAiEngine.test.ts` で、テスト対象が必要とする
+  `blob().arrayBuffer()` だけを持つfetch response mockにした。
+
+再実行結果:
+
+- `npm run fmt`: 成功。
+- `npm run lint`: 成功。
+- `npm run test`: 成功。
+- `npm run build`: 成功。

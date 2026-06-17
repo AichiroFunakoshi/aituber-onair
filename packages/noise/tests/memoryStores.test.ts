@@ -42,8 +42,25 @@ describe('noise memory stores', () => {
   });
 
   it('persists memory in localStorage', async () => {
+    const entries = new Map<string, string>();
     const store = new LocalStorageNoiseMemoryStore({
       keyPrefix: 'noise-test',
+      storage: {
+        getItem: (key: string) => entries.get(key) ?? null,
+        setItem: (key: string, value: string) => {
+          entries.set(key, value);
+        },
+        removeItem: (key: string) => {
+          entries.delete(key);
+        },
+        clear: () => {
+          entries.clear();
+        },
+        key: (index: number) => Array.from(entries.keys())[index] ?? null,
+        get length() {
+          return entries.size;
+        },
+      },
     });
 
     await store.save('scope', {

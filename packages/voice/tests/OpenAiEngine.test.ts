@@ -12,11 +12,12 @@ describe('OpenAiEngine', () => {
     engine.setSpeed(10);
     engine.setModel('   ');
     const audio = new Uint8Array([1, 2, 3]).buffer;
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(audio, {
-        status: 200,
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      blob: vi.fn().mockResolvedValue({
+        arrayBuffer: vi.fn().mockResolvedValue(audio),
       }),
-    );
+    });
     vi.stubGlobal('fetch', fetchMock);
 
     const result = await engine.fetchAudio(
@@ -51,9 +52,12 @@ describe('OpenAiEngine', () => {
     const engine = new OpenAiEngine();
     engine.setSpeed(0);
     engine.setModel('gpt-4o-mini-tts');
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue(new Response(new ArrayBuffer(0)));
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      blob: vi.fn().mockResolvedValue({
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0)),
+      }),
+    });
     vi.stubGlobal('fetch', fetchMock);
 
     await engine.fetchAudio(
