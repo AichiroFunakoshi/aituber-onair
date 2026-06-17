@@ -68,7 +68,61 @@ OPENAI_TTS_API_KEY=
 
 ## 検証記録
 
-まだ依存インストール、ビルド、テストは実行していません。理由は、先に
-MacBook Air上でCodex/ChatGPTアプリの強制終了・ハング傾向を確認したためです。
-初回の重い検証は、対象サンプルを絞って実行します。
+### 2026-06-17: PNGTuberサンプルの最小検証
 
+実行方針:
+
+- 全workspaces一括ではなく、PNGTuberサンプルに必要な範囲だけ検証。
+- npmの共有キャッシュ `~/.npm` は権限問題があったため使わない。
+- 専用キャッシュ `/private/tmp/tuber-npm-cache` を使う。
+- 重い処理は並列化しない。
+
+最初に以下を実行したところ、`~/.npm` 配下のroot-ownedファイルにより失敗しました。
+
+```sh
+cd packages/core/examples/react-pngtuber-app
+npm ci --no-audit --no-fund
+```
+
+再実行では専用キャッシュを指定し、依存インストールに成功しました。
+
+```sh
+npm ci --cache /private/tmp/tuber-npm-cache --no-audit --no-fund
+```
+
+PNGTuberサンプル単体のbuildは、ローカルworkspaceパッケージの `dist` が未作成だったため
+一度失敗しました。必要パッケージのみ順番にbuildしてから再実行し、成功しました。
+
+```sh
+cd /Users/inaminetetsuo/Tuber/aituber-onair
+npm run build --workspace @aituber-onair/chat
+npm run build --workspace @aituber-onair/voice
+npm run build --workspace @aituber-onair/manneri
+npm run build --workspace @aituber-onair/comment-intelligence
+npm run build --workspace @aituber-onair/core
+
+cd packages/core/examples/react-pngtuber-app
+npm run build
+```
+
+開発サーバーも短時間だけ起動し、HTTP応答を確認しました。
+
+```sh
+npm run dev -- --host 127.0.0.1
+curl -I http://127.0.0.1:5173/
+```
+
+結果:
+
+- `npm ci` 成功。
+- 必要workspaceパッケージのbuild成功。
+- `react-pngtuber-app` のproduction build成功。
+- Vite dev server は `http://127.0.0.1:5173/` で起動。
+- `curl -I` で `HTTP/1.1 200 OK` を確認。
+- ブラウザ実機確認は未実行。
+
+補足:
+
+- `/usr/bin/time -l` は、このサンドボックスでは `sysctl kern.clockrate: Operation not permitted`
+  により終了コード1になることがあるため、npmコマンド自体の成否とは分けて扱う。
+- `node_modules` と `dist` はignore対象で、リポジトリにはコミットしない。
