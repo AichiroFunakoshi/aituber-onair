@@ -76,6 +76,8 @@ git push origin main
 
 最初は共有パッケージを大きく書き換えません。まず自分用のアプリ境界を小さく作ります。
 
+- 初期仕様は `docs/product-spec.ja.md` に置く。
+- ローカル環境と検証結果は `docs/local-development.ja.md` に置く。
 - アプリ名、キャラクター設定、LLM/TTSプロバイダを文書化する。
 - APIキーや個人設定は `.env` に置き、Gitには入れない。
 - 独自UIや設定は、専用の app/example 領域に集める。
@@ -128,4 +130,3 @@ git diff --name-only upstream/main...HEAD
 - 初期LLMプロバイダ。
 - 初期TTSプロバイダ。
 - PWAだけで進めるか、Capacitor包装まで行うか。
-
