@@ -126,3 +126,34 @@ curl -I http://127.0.0.1:5173/
 - `/usr/bin/time -l` は、このサンドボックスでは `sysctl kern.clockrate: Operation not permitted`
   により終了コード1になることがあるため、npmコマンド自体の成否とは分けて扱う。
 - `node_modules` と `dist` はignore対象で、リポジトリにはコミットしない。
+
+### 2026-06-17: 全workspaces検証
+
+ユーザー指示により、全workspacesの標準検証を実行しました。
+
+```sh
+npm run fmt
+npm run lint
+npm run test
+npm run build
+```
+
+初回の `npm run test` では、Node 25 / npm 11 環境で次のテストが失敗しました。
+
+- `@aituber-onair/noise`: `LocalStorageNoiseMemoryStore` のテストがランタイム提供の
+  `globalThis.localStorage` 形状に依存していた。
+- `@aituber-onair/voice`: `OpenAiEngine` のテストが `Response.blob().arrayBuffer()` の
+  実装差分に依存していた。
+
+対応:
+
+- `packages/noise/tests/memoryStores.test.ts` で、明示的なStorage fakeを渡すようにした。
+- `packages/voice/tests/OpenAiEngine.test.ts` で、テスト対象が必要とする
+  `blob().arrayBuffer()` だけを持つfetch response mockにした。
+
+再実行結果:
+
+- `npm run fmt`: 成功。
+- `npm run lint`: 成功。
+- `npm run test`: 成功。
+- `npm run build`: 成功。
