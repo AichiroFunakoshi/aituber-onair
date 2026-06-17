@@ -1,5 +1,15 @@
 # Repository Guidelines
 
+## Fork-Local Direction
+- This fork is being established as AichiroFunakoshi's own macOS/iOS-facing
+  AITuber app base. Before making product-specific changes, read
+  `docs/my-app-workflow.ja.md`.
+- Keep upstream-derived package work separate from app-specific product work.
+  Prefer adding product-specific code under a dedicated app/example area instead
+  of rewriting shared packages first.
+- Treat `origin/main` on GitHub as the canonical latest state for this fork.
+  Pull with `git pull --ff-only origin main` before starting work on each Mac.
+
 ## Project Structure & Modules
 - Monorepo via npm workspaces under `packages/*` with `src`, `tests`, `images`, `dist`, and `examples` per package.
 - Key packages: `core` (integration/orchestration), `chat` (LLM providers), `voice` (TTS engines), `manneri` (conversation pattern detection), `bushitsu-client` (WebSocket + React hooks), `kizuna` (relationship/points).
