@@ -14,7 +14,9 @@ const AVATAR_IMAGES = {
   mouth_open_eyes_close: '/avatar/mouth_open_eyes_close.png',
 } as const;
 
+/** Avatar pose image keys for mouth and eye state combinations. */
 export type AvatarImageKey = keyof typeof AVATAR_IMAGES;
+/** Optional custom image URLs keyed by avatar pose. */
 export type AvatarImageUrls = Partial<Record<AvatarImageKey, string>>;
 
 /** Hook for random blinking */
@@ -127,6 +129,7 @@ function FallbackAvatar({
   );
 }
 
+/** Renders the avatar preview with lipsync state and debug volume display. */
 export function AvatarPanel({
   mouthLevel,
   isSpeaking,
@@ -181,6 +184,7 @@ export function AvatarPanel({
 }
 
 /** Avatar composited into the chat background */
+/** Renders the large avatar layer used behind the chat controls. */
 export function AvatarBackground({
   mouthLevel,
   isSpeaking,

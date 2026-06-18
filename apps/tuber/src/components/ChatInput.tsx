@@ -6,6 +6,7 @@ interface ChatInputProps {
   disabled: boolean;
 }
 
+/** Renders text and speech input controls for sending chat messages. */
 export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [text, setText] = useState('');
   const composingRef = useRef(false);

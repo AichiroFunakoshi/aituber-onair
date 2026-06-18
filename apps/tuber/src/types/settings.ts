@@ -1,3 +1,4 @@
+/** Supported chat providers in the settings UI and runtime. */
 export type ChatProviderOption =
   | 'openai'
   | 'openrouter'
@@ -8,6 +9,7 @@ export type ChatProviderOption =
   | 'zai'
   | 'kimi'
   | 'openai-compatible';
+/** Supported text-to-speech engines in the settings UI and runtime. */
 export type TTSEngineOption =
   | 'openai'
   | 'geminiTts'
@@ -22,8 +24,10 @@ export type TTSEngineOption =
   | 'elevenLabs'
   | 'piperPlus'
   | 'none';
+/** Supported live comment source platforms. */
 export type StreamingPlatformOption = 'none' | 'youtube' | 'twitch';
 
+/** API keys keyed by chat provider. */
 export interface ProviderApiKeys {
   openai?: string;
   openrouter?: string;
@@ -35,6 +39,7 @@ export interface ProviderApiKeys {
   'openai-compatible'?: string;
 }
 
+/** LLM provider, model, endpoint, and model cache settings. */
 export interface LLMSettings {
   provider: ChatProviderOption;
   model: string;
@@ -47,6 +52,7 @@ export interface LLMSettings {
   };
 }
 
+/** Text-to-speech engine and provider-specific voice settings. */
 export interface TTSSettings {
   engine: TTSEngineOption;
   speaker: string;
@@ -97,6 +103,7 @@ export interface TTSSettings {
   piperPlusNoiseScale?: string;
 }
 
+/** Live comment ingestion settings for supported streaming platforms. */
 export interface StreamSettings {
   platform: StreamingPlatformOption;
   youtubeApiKey: string;
@@ -110,6 +117,7 @@ export interface StreamSettings {
   twitchCommentIntervalMs: number;
 }
 
+/** Complete persisted application settings shape. */
 export interface AppSettings {
   llm: LLMSettings;
   tts: TTSSettings;

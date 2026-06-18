@@ -31,6 +31,7 @@ function getTwitchRedirectUri(): string {
   return new URL(window.location.pathname, window.location.origin).toString();
 }
 
+/** Renders YouTube and Twitch comment ingestion settings. */
 export function StreamSettings({
   stream,
   disabled,

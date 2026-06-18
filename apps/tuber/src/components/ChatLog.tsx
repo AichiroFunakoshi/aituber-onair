@@ -6,6 +6,7 @@ interface ChatLogProps {
   partialResponse: string;
 }
 
+/** Renders the chat timeline and any in-progress assistant response. */
 export function ChatLog({ messages, partialResponse }: ChatLogProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 

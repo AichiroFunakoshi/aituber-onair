@@ -160,6 +160,7 @@ const AVATAR_IMAGE_FIELDS: { key: AvatarImageKey; label: string }[] = [
   { key: 'mouth_open_eyes_close', label: '口開き / 目閉じ' },
 ];
 
+/** Renders app configuration controls for LLM, TTS, visuals, and streams. */
 export function SettingsPanel({
   settings,
   availableModels,

@@ -15,6 +15,7 @@ interface ChatPanelProps {
   avatarImageUrls?: AvatarImageUrls;
 }
 
+/** Combines avatar, chat log, and message input into the main chat surface. */
 export function ChatPanel({
   messages,
   partialResponse,

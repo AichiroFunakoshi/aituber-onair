@@ -6,6 +6,7 @@ interface UseSpeechRecognitionOptions {
   onFinalTranscript?: (text: string) => void;
 }
 
+/** Manages browser speech recognition state and transcript callbacks. */
 export function useSpeechRecognition(options?: UseSpeechRecognitionOptions) {
   const onFinalTranscript = options?.onFinalTranscript;
   const supported =
