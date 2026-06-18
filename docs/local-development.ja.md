@@ -8,7 +8,7 @@
 - 確認日: 2026-06-17
 - Mac: MacBook Air
 - メモリ: 8 GB
-- ローカルパス: `/Users/inaminetetsuo/Tuber/aituber-onair`
+- ローカルパス: このMacでは `/Users/inaminetetsuo/Tuber/aituber-onair`
 - Node: `v25.9.0`
 - npm: `11.12.1`
 
@@ -45,18 +45,19 @@ Node 20へ切り替えられるようにします。
 
 ## 初期セットアップ候補
 
-ルート全体を触る前に、まずPNGTubeサンプルだけで起動確認します。
+専用アプリは `apps/tuber` です。Node 20へ切り替えて起動します。
 
 ```sh
-cd /Users/inaminetetsuo/Tuber/aituber-onair/packages/core/examples/react-pngtuber-app
+cd /path/to/aituber-onair
+export PATH="/opt/homebrew/opt/node@20/bin:$PATH"
 npm install
-npm run dev
+npm run tuber:dev
 ```
 
-動作確認後、必要に応じてルートで依存関係と全体検証を行います。
+必要に応じてルートで全体検証を行います。
 
 ```sh
-cd /Users/inaminetetsuo/Tuber/aituber-onair
+cd /path/to/aituber-onair
 npm install
 npm run fmt
 npm run lint
@@ -108,7 +109,7 @@ PNGTuberサンプル単体のbuildは、ローカルworkspaceパッケージの 
 一度失敗しました。必要パッケージのみ順番にbuildしてから再実行し、成功しました。
 
 ```sh
-cd /Users/inaminetetsuo/Tuber/aituber-onair
+cd /path/to/aituber-onair
 npm run build --workspace @aituber-onair/chat
 npm run build --workspace @aituber-onair/voice
 npm run build --workspace @aituber-onair/manneri
@@ -171,3 +172,44 @@ npm run build
 - `npm run lint`: 成功。
 - `npm run test`: 成功。
 - `npm run build`: 成功。
+
+### 2026-06-18: 専用アプリ `apps/tuber` の追加検証
+
+`apps/tuber` をこのフォークの専用PNGTuberアプリとして追加しました。
+
+Node 20で以下を実行し、成功しました。
+
+```sh
+export PATH="/opt/homebrew/opt/node@20/bin:$PATH"
+npm install --cache /private/tmp/tuber-npm-cache --no-audit --no-fund
+npm run fmt
+npm run lint
+npm run test
+npm run build
+```
+
+`apps/tuber` 単体でも以下が成功しています。
+
+```sh
+npm run tuber:build
+npm run tuber:lint
+```
+
+dev serverは `apps/tuber` から起動し、HTMLとPWA manifestのHTTP応答を確認しました。
+
+```sh
+cd apps/tuber
+npm run dev -- --host 127.0.0.1
+curl -I http://127.0.0.1:5173/
+curl -I http://127.0.0.1:5173/manifest.webmanifest
+```
+
+結果:
+
+- `/`: `HTTP/1.1 200 OK`
+- `/manifest.webmanifest`: `HTTP/1.1 200 OK`
+
+補足:
+
+- ルートの `npm run tuber:dev -- --host 127.0.0.1` でも引数が正しく渡るよう、
+  `tuber:dev` スクリプトは末尾に `--` を含めています。

@@ -3,6 +3,7 @@
     "version": "0.14.0",
     "private": true,
     "workspaces": [
+        "apps/*",
         "packages/*"
     ],
     "scripts": {
@@ -12,6 +13,9 @@
         "fmt:check": "npm run fmt:check --workspaces",
         "check:biome-config": "node scripts/check-biome-config.mjs",
         "lint": "npm run lint --workspaces",
+        "tuber:dev": "npm -w @aichiro/tuber run dev --",
+        "tuber:build": "npm -w @aichiro/tuber run build",
+        "tuber:lint": "npm -w @aichiro/tuber run lint",
         "changeset": "changeset",
         "changeset:version": "changeset version",
         "changeset:publish": "changeset publish",
