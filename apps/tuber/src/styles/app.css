@@ -198,7 +198,7 @@ body {
   padding: 0;
   border: 0;
   overflow: hidden;
-  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
 }
 
 .settings-file-trigger {
@@ -398,7 +398,7 @@ body {
   line-height: 1.5;
   font-size: 0.9rem;
   white-space: pre-wrap;
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .chat-message-user {

@@ -22,6 +22,41 @@ let buffer: TwitchChatMessage[] = [];
 let pollTimer: number | null = null;
 let reconnectInProgress = false;
 const processedMessageIds = new Set<string>();
+const MAX_BUFFERED_MESSAGES = 100;
+const MAX_PROCESSED_MESSAGE_IDS = 1000;
+const REQUEST_TIMEOUT_MS = 15_000;
+
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+function rememberProcessedMessageId(messageId: string): void {
+  processedMessageIds.add(messageId);
+  if (processedMessageIds.size <= MAX_PROCESSED_MESSAGE_IDS) {
+    return;
+  }
+
+  const oldest = processedMessageIds.values().next().value;
+  if (oldest) {
+    processedMessageIds.delete(oldest);
+  }
+}
+
+function enqueueMessage(message: TwitchChatMessage): void {
+  buffer.push(message);
+  if (buffer.length > MAX_BUFFERED_MESSAGES) {
+    buffer = buffer.slice(-MAX_BUFFERED_MESSAGES);
+  }
+}
 
 export async function connectTwitchChat(
   options: ConnectTwitchChatOptions,
@@ -45,7 +80,7 @@ export async function connectTwitchChat(
 
   await cleanupExistingSubscriptions(token, clientId);
 
-  const broadcasterResponse = await fetch(
+  const broadcasterResponse = await fetchWithTimeout(
     `https://api.twitch.tv/helix/users?login=${encodeURIComponent(channelLogin)}`,
     {
       headers: {
@@ -64,9 +99,12 @@ export async function connectTwitchChat(
     throw new Error('Invalid Twitch channel login');
   }
 
-  const validateResponse = await fetch('https://id.twitch.tv/oauth2/validate', {
-    headers: { Authorization: `OAuth ${token}` },
-  });
+  const validateResponse = await fetchWithTimeout(
+    'https://id.twitch.tv/oauth2/validate',
+    {
+      headers: { Authorization: `OAuth ${token}` },
+    },
+  );
   if (validateResponse.status === 401) {
     onTokenExpired?.();
     throw new Error('Twitch token expired');
@@ -94,7 +132,7 @@ export async function connectTwitchChat(
     twitchClientId: string,
   ) {
     try {
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         'https://api.twitch.tv/helix/eventsub/subscriptions',
         {
           headers: {
@@ -116,7 +154,7 @@ export async function connectTwitchChat(
           subscription.type === 'channel.chat.message' &&
           subscription.transport?.method === 'websocket'
         ) {
-          await fetch(
+          await fetchWithTimeout(
             `https://api.twitch.tv/helix/eventsub/subscriptions?id=${subscription.id}`,
             {
               method: 'DELETE',
@@ -138,11 +176,17 @@ export async function connectTwitchChat(
       return;
     }
 
-    ws.onmessage = handleWsMessage;
+    const currentWs = ws;
 
-    ws.onclose = () => {
+    currentWs.onmessage = handleWsMessage;
+
+    currentWs.onclose = () => {
+      if (ws !== currentWs) {
+        return;
+      }
       if (pollTimer) {
         clearInterval(pollTimer);
+        pollTimer = null;
       }
       buffer = [];
 
@@ -151,13 +195,13 @@ export async function connectTwitchChat(
       }
     };
 
-    ws.onerror = (error) => {
+    currentWs.onerror = (error) => {
       console.error('Twitch WebSocket error:', error);
     };
   }
 
   async function subscribe(sessionId: string) {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       'https://api.twitch.tv/helix/eventsub/subscriptions',
       {
         method: 'POST',
@@ -236,8 +280,8 @@ export async function connectTwitchChat(
           return;
         }
 
-        processedMessageIds.add(messageId);
-        buffer.push({
+        rememberProcessedMessageId(messageId);
+        enqueueMessage({
           userName: message.payload.event.chatter_user_name,
           userComment: message.payload.event.message.text,
         });

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+/** Gemini Nano availability and preparation lifecycle states. */
 export type GeminiNanoStatus =
   | 'checking'
   | 'available'
@@ -8,8 +9,16 @@ export type GeminiNanoStatus =
   | 'unavailable'
   | 'error';
 
+type LanguageModelAvailabilityStatus =
+  | 'available'
+  | 'downloading'
+  | 'downloadable'
+  | 'unavailable';
+
 interface LanguageModelAPI {
-  availability(options?: Record<string, unknown>): Promise<string>;
+  availability(
+    options?: Record<string, unknown>,
+  ): Promise<LanguageModelAvailabilityStatus>;
   create(options?: Record<string, unknown>): Promise<{ destroy(): void }>;
 }
 
@@ -31,6 +40,7 @@ function getLanguageModel(): LanguageModelAPI | undefined {
     .LanguageModel as LanguageModelAPI;
 }
 
+/** Tracks Gemini Nano browser API availability and preparation progress. */
 export function useGeminiNanoStatus(enabled: boolean): GeminiNanoState {
   const [status, setStatus] = useState<GeminiNanoStatus>('checking');
   const [statusText, setStatusText] = useState('');

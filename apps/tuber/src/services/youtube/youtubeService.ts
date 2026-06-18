@@ -5,8 +5,7 @@
  * filtering, time limits, and bounded in-memory state.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
+/** Normalized chat message delivered from YouTube Live chat. */
 export interface YouTubeChatMessage {
   id: string;
   userName: string;
@@ -15,8 +14,37 @@ export interface YouTubeChatMessage {
   publishedAt: string;
 }
 
+interface YouTubeVideosResponse {
+  items?: Array<{
+    liveStreamingDetails?: {
+      activeLiveChatId?: string;
+    };
+  }>;
+}
+
+interface YouTubeLiveChatMessageItem {
+  id: string;
+  snippet: {
+    publishedAt: string;
+    textMessageDetails?: { messageText?: string };
+    superChatDetails?: { userComment?: string };
+  };
+  authorDetails: {
+    displayName: string;
+    profileImageUrl: string;
+  };
+}
+
+interface YouTubeLiveChatMessagesResponse {
+  error?: unknown;
+  pollingIntervalMillis?: number;
+  nextPageToken?: string;
+  items?: YouTubeLiveChatMessageItem[];
+}
+
 interface LiveChatState {
   nextPageToken: string;
+  activeLiveChatId: string;
   processedCommentIds: Set<string>;
   processedCommentHashes: Set<string>;
   lastProcessedComment: { hash: string; timestamp: number } | null;
@@ -27,14 +55,29 @@ interface LiveChatState {
 const DEFAULT_TIME_LIMIT_MINUTES = 10;
 const MAX_COMMENT_IDS = 1000;
 const CLEANUP_INTERVAL = 5 * 60 * 1000;
+const REQUEST_TIMEOUT_MS = 15_000;
 
 const liveChatStates = new Map<string, LiveChatState>();
 const pollingIntervals = new Map<string, number>();
+
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 function getLiveChatState(liveId: string): LiveChatState {
   if (!liveChatStates.has(liveId)) {
     liveChatStates.set(liveId, {
       nextPageToken: '',
+      activeLiveChatId: '',
       processedCommentIds: new Set(),
       processedCommentHashes: new Set(),
       lastProcessedComment: null,
@@ -83,6 +126,7 @@ function cleanupOldCommentIds(state: LiveChatState): void {
   state.lastCleanupTime = now;
 }
 
+/** Resolves the active live chat ID for a YouTube live video ID. */
 export async function getLiveChatId(
   liveId: string,
   apiKey: string,
@@ -92,10 +136,10 @@ export async function getLiveChatId(
     id: liveId,
     key: apiKey,
   });
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     `https://youtube.googleapis.com/youtube/v3/videos?${params}`,
   );
-  const json = await response.json();
+  const json = (await response.json()) as YouTubeVideosResponse;
 
   if (!json.items || json.items.length === 0) {
     return '';
@@ -104,6 +148,7 @@ export async function getLiveChatId(
   return json.items[0].liveStreamingDetails?.activeLiveChatId || '';
 }
 
+/** Retrieves and emits new comments for an already resolved live chat ID. */
 export async function retrieveLiveComments(
   liveId: string,
   activeLiveChatId: string,
@@ -122,10 +167,10 @@ export async function retrieveLiveComments(
     params.set('pageToken', state.nextPageToken);
   }
 
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     `https://youtube.googleapis.com/youtube/v3/liveChat/messages?${params}`,
   );
-  const json = await response.json();
+  const json = (await response.json()) as YouTubeLiveChatMessagesResponse;
 
   if (json.error) {
     console.error('YouTube API error:', json.error);
@@ -136,12 +181,12 @@ export async function retrieveLiveComments(
     pollingIntervals.set(liveId, json.pollingIntervalMillis);
   }
 
-  const items: any[] = json.items || [];
+  const items = json.items || [];
   state.nextPageToken = json.nextPageToken || '';
   state.lastFetchTime = Date.now();
 
   const newComments: YouTubeChatMessage[] = items
-    .filter((item: any) => {
+    .filter((item) => {
       const commentId = item.id;
       const publishedAt = item.snippet.publishedAt;
       const userName = item.authorDetails.displayName;
@@ -177,7 +222,7 @@ export async function retrieveLiveComments(
       state.processedCommentHashes.add(commentHash);
       return true;
     })
-    .map((item: any) => ({
+    .map((item) => ({
       id: item.id,
       userName: item.authorDetails.displayName,
       userIconUrl: item.authorDetails.profileImageUrl,
@@ -205,6 +250,7 @@ export async function retrieveLiveComments(
   return pollingIntervals.get(liveId) || 0;
 }
 
+/** Fetches comments for a live video ID, caching the live chat ID per stream. */
 export async function fetchAndProcessComments(
   liveId: string,
   apiKey: string,
@@ -216,8 +262,11 @@ export async function fetchAndProcessComments(
   }
 
   try {
-    const liveChatId = await getLiveChatId(liveId, apiKey);
+    const state = getLiveChatState(liveId);
+    const liveChatId =
+      state.activeLiveChatId || (await getLiveChatId(liveId, apiKey));
     if (liveChatId) {
+      state.activeLiveChatId = liveChatId;
       return await retrieveLiveComments(
         liveId,
         liveChatId,
@@ -233,6 +282,7 @@ export async function fetchAndProcessComments(
   return pollingIntervals.get(liveId) || 0;
 }
 
+/** Combines the user interval with the last YouTube recommended polling delay. */
 export function getNextPollingInterval(
   liveId: string,
   userIntervalMs: number,

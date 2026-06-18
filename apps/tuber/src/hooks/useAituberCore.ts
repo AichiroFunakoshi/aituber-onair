@@ -179,6 +179,7 @@ function buildVoiceOptions(
   } as VoiceServiceOptions;
 }
 
+/** Manages the AITuber core instance and exposes chat state/actions to the UI. */
 export function useAituberCore({
   onAudioPlay,
   settings,
@@ -217,6 +218,10 @@ export function useAituberCore({
     if (!isApiKeyOptionalProvider && !llmApiKey) {
       coreRef.current?.offAll();
       coreRef.current = null;
+      queueMicrotask(() => {
+        setIsProcessing(false);
+        setPartialResponse('');
+      });
       console.error(
         `API key is not set for provider: ${settings.llm.provider}`,
       );
@@ -226,6 +231,10 @@ export function useAituberCore({
     if (isOpenAICompatibleProvider && !openAICompatibleEndpoint) {
       coreRef.current?.offAll();
       coreRef.current = null;
+      queueMicrotask(() => {
+        setIsProcessing(false);
+        setPartialResponse('');
+      });
       console.error('Endpoint URL is required for openai-compatible provider');
       return;
     }
@@ -350,6 +359,37 @@ export function useAituberCore({
     settings.tts.xaiCodec,
     settings.tts.xaiSampleRate,
     settings.tts.xaiBitRate,
+    settings.tts.geminiTtsModel,
+    settings.tts.geminiTtsLanguageCode,
+    settings.tts.geminiTtsPrompt,
+    settings.tts.aivisCloudApiKey,
+    settings.tts.minimaxApiKey,
+    settings.tts.openAiCompatibleApiKey,
+    settings.tts.unrealSpeechApiKey,
+    settings.tts.unrealSpeechApiUrl,
+    settings.tts.unrealSpeechBitrate,
+    settings.tts.unrealSpeechSpeed,
+    settings.tts.unrealSpeechPitch,
+    settings.tts.unrealSpeechCodec,
+    settings.tts.unrealSpeechTemperature,
+    settings.tts.elevenLabsApiKey,
+    settings.tts.elevenLabsApiUrl,
+    settings.tts.elevenLabsModel,
+    settings.tts.elevenLabsOutputFormat,
+    settings.tts.elevenLabsLanguageCode,
+    settings.tts.elevenLabsStability,
+    settings.tts.elevenLabsSimilarityBoost,
+    settings.tts.elevenLabsStyle,
+    settings.tts.elevenLabsUseSpeakerBoost,
+    settings.tts.elevenLabsSpeed,
+    settings.tts.elevenLabsSeed,
+    settings.tts.elevenLabsApplyTextNormalization,
+    settings.tts.piperPlusBasePath,
+    settings.tts.piperPlusModelConfigFile,
+    settings.tts.piperPlusModelFile,
+    settings.tts.piperPlusVoiceFile,
+    settings.tts.piperPlusSpeed,
+    settings.tts.piperPlusNoiseScale,
     ttsApiKey,
   ]);
 
@@ -357,11 +397,13 @@ export function useAituberCore({
     async (text: string) => {
       if (!coreRef.current || !text.trim()) return;
 
+      const messageId = createMessageId();
+
       // Append the user message to the chat log
       setMessages((prev) => [
         ...prev,
         {
-          id: createMessageId(),
+          id: messageId,
           role: 'user',
           content: text.trim(),
           timestamp: Date.now(),
@@ -369,9 +411,17 @@ export function useAituberCore({
       ]);
 
       try {
-        await coreRef.current.processChat(text.trim());
+        const processed = await coreRef.current.processChat(text.trim());
+        if (!processed) {
+          setMessages((prev) =>
+            prev.filter((message) => message.id !== messageId),
+          );
+        }
       } catch (err) {
         console.error('processChat error:', err);
+        setMessages((prev) =>
+          prev.filter((message) => message.id !== messageId),
+        );
         setIsProcessing(false);
       }
     },

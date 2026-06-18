@@ -50,7 +50,7 @@ export function useTwitchComments({
     let cancelled = false;
     onErrorEvent('');
 
-    connectTwitchChat({
+    const connection = connectTwitchChat({
       channelLogin: twitchChannel,
       pollInterval: intervalMs,
       onComment: (message) => {
@@ -65,18 +65,26 @@ export function useTwitchComments({
       },
       token: twitchAccessToken,
       clientId: twitchClientId,
-    }).catch((error) => {
-      if (cancelled) {
-        return;
-      }
-
-      console.error('Twitch connection failed:', error);
-      onErrorEvent(
-        error instanceof Error
-          ? `Failed to receive Twitch comments: ${error.message}`
-          : 'Failed to receive Twitch comments.',
-      );
     });
+
+    connection
+      .then(() => {
+        if (cancelled) {
+          disconnectTwitchChat();
+        }
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+
+        console.error('Twitch connection failed:', error);
+        onErrorEvent(
+          error instanceof Error
+            ? `Failed to receive Twitch comments: ${error.message}`
+            : 'Failed to receive Twitch comments.',
+        );
+      });
 
     return () => {
       cancelled = true;

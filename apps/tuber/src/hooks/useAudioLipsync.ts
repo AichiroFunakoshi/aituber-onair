@@ -7,6 +7,7 @@ const SMOOTH_FACTOR = 0.5;
 /** RMS normalization ceiling (this value maps to 1.0) */
 const RMS_CEILING = 0.12;
 
+/** Plays synthesized audio and derives mouth animation levels from RMS volume. */
 export function useAudioLipsync() {
   const [mouthLevel, setMouthLevel] = useState(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -116,6 +117,11 @@ export function useAudioLipsync() {
       // Cleanup when playback ends
       return new Promise<void>((resolve) => {
         source.onended = () => {
+          if (sourceRef.current !== source) {
+            resolve();
+            return;
+          }
+
           if (rafRef.current) {
             cancelAnimationFrame(rafRef.current);
             rafRef.current = 0;

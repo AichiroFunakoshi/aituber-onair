@@ -151,6 +151,8 @@ interface ElevenLabsVoice {
 
 type SectionKey = 'llm' | 'tts' | 'visual' | 'stream';
 
+const SPEAKER_FETCH_TIMEOUT_MS = 15_000;
+
 const AVATAR_IMAGE_FIELDS: { key: AvatarImageKey; label: string }[] = [
   { key: 'mouth_close_eyes_open', label: '口閉じ / 目開き' },
   { key: 'mouth_close_eyes_close', label: '口閉じ / 目閉じ' },
@@ -271,6 +273,10 @@ export function SettingsPanel({
     }
 
     const controller = new AbortController();
+    const timeoutId = window.setTimeout(
+      () => controller.abort(),
+      SPEAKER_FETCH_TIMEOUT_MS,
+    );
 
     const fetchSpeakers = async () => {
       const isVoicevox = settings.tts.engine === 'voicevox';
@@ -307,12 +313,15 @@ export function SettingsPanel({
           setAivisSpeakers([]);
           setFetchError(`AivisSpeech接続エラー: ${message}`);
         }
+      } finally {
+        window.clearTimeout(timeoutId);
       }
     };
 
     void fetchSpeakers();
 
     return () => {
+      window.clearTimeout(timeoutId);
       controller.abort();
     };
   }, [
@@ -336,6 +345,10 @@ export function SettingsPanel({
     }
 
     const controller = new AbortController();
+    const timeoutId = window.setTimeout(
+      () => controller.abort(),
+      SPEAKER_FETCH_TIMEOUT_MS,
+    );
 
     const fetchMinimaxVoices = async () => {
       setIsFetchingMinimaxVoices(true);
@@ -382,6 +395,7 @@ export function SettingsPanel({
         setMinimaxVoices([]);
         setFetchError(`MiniMax接続エラー: ${message}`);
       } finally {
+        window.clearTimeout(timeoutId);
         if (!controller.signal.aborted) {
           setIsFetchingMinimaxVoices(false);
         }
@@ -391,6 +405,7 @@ export function SettingsPanel({
     void fetchMinimaxVoices();
 
     return () => {
+      window.clearTimeout(timeoutId);
       controller.abort();
     };
   }, [
@@ -415,6 +430,10 @@ export function SettingsPanel({
     }
 
     const controller = new AbortController();
+    const timeoutId = window.setTimeout(
+      () => controller.abort(),
+      SPEAKER_FETCH_TIMEOUT_MS,
+    );
 
     const fetchElevenLabsVoices = async () => {
       setIsFetchingElevenLabsVoices(true);
@@ -455,6 +474,7 @@ export function SettingsPanel({
         setElevenLabsVoices([]);
         setFetchError(`ElevenLabs接続エラー: ${message}`);
       } finally {
+        window.clearTimeout(timeoutId);
         if (!controller.signal.aborted) {
           setIsFetchingElevenLabsVoices(false);
         }
@@ -464,6 +484,7 @@ export function SettingsPanel({
     void fetchElevenLabsVoices();
 
     return () => {
+      window.clearTimeout(timeoutId);
       controller.abort();
     };
   }, [

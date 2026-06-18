@@ -13,7 +13,7 @@ import type {
 
 type ApiKeyProvider = Exclude<ChatProviderOption, 'gemini-nano'>;
 
-const STORAGE_KEY = 'react-pngtuber-app-settings';
+const STORAGE_KEY = 'aichiro-tuber-settings';
 const DEFAULT_AIVIS_CLOUD_MODEL_UUID = '22e8ed77-94fe-4ef2-871f-a86f94e9a579';
 const DEFAULT_GEMINI_TTS_MODEL = 'gemini-3.1-flash-tts-preview';
 const DEFAULT_GEMINI_TTS_LANGUAGE_CODE = 'ja-JP';
@@ -200,9 +200,37 @@ function loadSettings(): AppSettings {
 }
 
 function saveSettings(settings: AppSettings) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  const sanitized: AppSettings = {
+    ...settings,
+    llm: {
+      ...settings.llm,
+      apiKeys: {
+        openai: '',
+        xai: '',
+        zai: '',
+        kimi: '',
+        'openai-compatible': '',
+      },
+    },
+    tts: {
+      ...settings.tts,
+      openAiCompatibleApiKey: '',
+      aivisCloudApiKey: '',
+      minimaxApiKey: '',
+      unrealSpeechApiKey: '',
+      elevenLabsApiKey: '',
+    },
+    stream: {
+      ...settings.stream,
+      youtubeApiKey: '',
+      twitchClientId: '',
+      twitchAccessToken: '',
+    },
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
 }
 
+/** Manages local app settings, derived model lists, and typed update actions. */
 export function useSettings() {
   const [settings, setSettings] = useState<AppSettings>(loadSettings);
   const [openRouterRefreshError, setOpenRouterRefreshError] = useState('');

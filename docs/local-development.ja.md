@@ -8,7 +8,7 @@
 - 確認日: 2026-06-17
 - Mac: MacBook Air
 - メモリ: 8 GB
-- ローカルパス: `/Users/inaminetetsuo/Tuber/aituber-onair`
+- ローカルパス: このMacでは `/Users/inaminetetsuo/Tuber/aituber-onair`
 - Node: `v25.9.0`
 - npm: `11.12.1`
 
@@ -48,7 +48,7 @@ Node 20へ切り替えられるようにします。
 専用アプリは `apps/tuber` です。Node 20へ切り替えて起動します。
 
 ```sh
-cd /Users/inaminetetsuo/Tuber/aituber-onair
+cd /path/to/aituber-onair
 export PATH="/opt/homebrew/opt/node@20/bin:$PATH"
 npm install
 npm run tuber:dev
@@ -57,7 +57,7 @@ npm run tuber:dev
 必要に応じてルートで全体検証を行います。
 
 ```sh
-cd /Users/inaminetetsuo/Tuber/aituber-onair
+cd /path/to/aituber-onair
 npm install
 npm run fmt
 npm run lint
@@ -109,7 +109,7 @@ PNGTuberサンプル単体のbuildは、ローカルworkspaceパッケージの 
 一度失敗しました。必要パッケージのみ順番にbuildしてから再実行し、成功しました。
 
 ```sh
-cd /Users/inaminetetsuo/Tuber/aituber-onair
+cd /path/to/aituber-onair
 npm run build --workspace @aituber-onair/chat
 npm run build --workspace @aituber-onair/voice
 npm run build --workspace @aituber-onair/manneri
