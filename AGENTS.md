@@ -4,6 +4,15 @@
 - This fork is being established as AichiroFunakoshi's own macOS/iOS-facing
   AITuber app base. Before making product-specific changes, read
   `docs/my-app-workflow.ja.md`.
+- The parent folder is a local planning/reference workspace. When available,
+  read `../AGENTS.md` and `../PROJECT_SETUP_PLAN.md` before starting work, and
+  consult `../参考画像/` when avatar or visual references are relevant.
+- Run Git, npm, build, and test commands from this repository root only. Do not
+  run those commands from the parent `Tuber` folder; on this Mac, the parent of
+  `Tuber` may be detected as a Git repository and cause a home-directory-wide
+  status scan.
+- If the command location is unclear, check `git rev-parse --show-toplevel`
+  first and continue only when it resolves to this `aituber-onair` repository.
 - Keep upstream-derived package work separate from app-specific product work.
   Prefer adding product-specific code under a dedicated app/example area instead
   of rewriting shared packages first.
