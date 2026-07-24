@@ -28,3 +28,8 @@ npm run tuber:build
 - 対象: macOS Safari / iOS Safari
 - 設定保存: localStorage
 - 秘密情報: リポジトリには保存しない
+
+## アバター画像
+
+正式キャラクターへ差し替える4状態PNGの仕様は、
+[PNGTuber Avatar Asset Spec](../../docs/avatar-asset-spec.ja.md) を参照してください。
